@@ -1,6 +1,6 @@
 <script>
+// eslint-disable-next-line no-unused-vars
 // noinspection ES6UnusedImports
-import {ref} from "vue";
 import axios from "axios";
 import GoogleWalletButton from "@/components/GoogleWalletButton.vue";
 import AppleWalletButton from "@/components/AppleWalletButton.vue";
@@ -46,7 +46,7 @@ export default {
       }
     },
     async generateQr(vcard) {
-      await axios.post('/vcard/qr?size=250', vcard, {responseType: 'blob'})
+      return await axios.post('/vcard/qr?size=250', vcard, {responseType: 'blob'})
           .then(response => {
             let imageAsBlob = new Blob([response.data], {type: "image/png"})
             return (window.URL || window.webkitURL).createObjectURL(imageAsBlob)

@@ -30,7 +30,7 @@ public class GoogleTokenCreator {
     private Walletobjects walletService;
     private GoogleCredentials credentials;
 
-    @Value("${application.name}")
+    @Value("${google.application.name}")
     private String applicationName;
     @Value("${google.access.token}")
     private String accessToken;
@@ -40,10 +40,14 @@ public class GoogleTokenCreator {
     private String issuerId;
     @Value("${google.vcard.suffix}")
     private String classSuffix;
+    @Value("${google.enabled}")
+    private boolean enabled;
 
     @PostConstruct
     public void init() {
-        auth();
+        if (enabled) {
+            auth();
+        }
     }
 
     @SneakyThrows
@@ -60,6 +64,9 @@ public class GoogleTokenCreator {
     }
 
     public String createGoogleLink(VCardInformation vcard) {
+        if (!enabled) {
+            return null;
+        }
         var algorithm = Algorithm.RSA256(null, (RSAPrivateKey) ((ServiceAccountCredentials) credentials).getPrivateKey());
         var token = JWT.create()
                 .withIssuer(((ServiceAccountCredentials) credentials).getClientEmail())
