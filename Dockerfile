@@ -12,7 +12,7 @@ RUN npm run build
 #
 # Build stage
 #
-FROM maven:3.9.9-eclipse-temurin-22-alpine AS build
+FROM maven:3-eclipse-temurin-24-alpine AS build
 ENV HOME=/usr/app
 RUN mkdir -p $HOME
 WORKDIR $HOME
@@ -23,8 +23,8 @@ RUN mvn clean install
 #
 # Run stage
 #
-FROM maven:3.9.9-eclipse-temurin-22-alpine AS run
+FROM eclipse-temurin:24-alpine AS run
 ARG JAR_FILE=/usr/app/target/*.jar
 COPY --from=build $JAR_FILE /app/runner.jar
 EXPOSE 8080
-ENTRYPOINT java -jar /app/runner.jar
+ENTRYPOINT exec java -jar /app/runner.jar

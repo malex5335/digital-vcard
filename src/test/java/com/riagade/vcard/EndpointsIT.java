@@ -1,88 +1,103 @@
 package com.riagade.vcard;
 
-import com.riagade.vcard.entities.*;
-import com.riagade.vcard.entities.Contact.ContactCategory;
-import com.riagade.vcard.entities.Contact.Email;
-import com.riagade.vcard.entities.Contact.Telephone;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
 
 import static com.riagade.vcard.entities.VCardType.REV_DATE_FORMAT;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class EndpointsIT {
+    public static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
     @Test
     void vcard() {
         // Given
         var updateDate = LocalDateTime.now();
-        var vcardInfo = VCardInformation.builder()
-                .vcardType(VCardType.builder()
-                        .lastUpdated(updateDate)
-                        .contactType(VCardType.ContactType.INDIVIDUAL)
-                        .build())
-                .personalInformation(Person.builder()
-                        .title(Person.Title.NONE)
-                        .firstname("Jon")
-                        .lastname("Doe")
-                        .gender(Person.Gender.MALE)
-                        .birthdate(LocalDate.of(2012, 3, 14))
-                        .birthplace("Berlin, Germany")
-                        .build())
-                .workInformation(WorkPerson.builder()
-                        .company("Lightning Portal Co.")
-                        .department("SW")
-                        .team("Consulting")
-                        .jobTitle("Senior Software Engineer")
-                        .build())
-                .contactInformation(Contact.builder()
-                        .telephones(List.of(
-                                new Telephone(ContactCategory.HOME, "+491234567890"),
-                                new Telephone(ContactCategory.WORK, "+49030123456")))
-                        .emails(List.of(
-                                new Email(ContactCategory.HOME, "mind.body@world.com"),
-                                new Email(ContactCategory.WORK, "jon.doe@company.uk")))
-                        .build())
-                .socialMedia(SocialMedia.builder()
-                        .website("https://www.google.com")
-                        .build())
-                .build();
+        var vcardInfo = """
+                {
+                	"vcardType": {
+                		"lastUpdated": "%s",
+                		"contactType": "INDIVIDUAL"
+                	},
+                	"personalInformation": {
+                		"gender": "MALE",
+                		"title": null,
+                		"firstname": "Jon",
+                		"lastname": "Doe",
+                		"birthdate": "2012-03-14",
+                		"birthplace": "Berlin, Germany"
+                	},
+                	"workInformation": {
+                		"jobTitle": "Senior Software Engineer",
+                		"company": "Lightning Portal Co.",
+                		"department": "SW",
+                		"team": "Consulting",
+                		"role": "Software-Consultant"
+                	},
+                	"contactInformation": {
+                		"telephones": [
+                			{
+                				"category": "HOME",
+                				"number": "+491234567890"
+                			},
+                			{
+                				"category": "WORK",
+                				"number": "+49030123456"
+                			}
+                		],
+                		"emails": [
+                			{
+                				"category": "HOME",
+                				"email": "mind.body@world.com"
+                			},
+                			{
+                				"category": "WORK",
+                				"email": "jon.doe@company.uk"
+                			}
+                		]
+                	},
+                	"socialMedia": {
+                		"website": "https://www.google.com"
+                	}
+                }
+                """.formatted(updateDate.format(DATE_FORMAT));
+        // When
+        var actualResponse = given()
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .body(vcardInfo)
+                .when()
+                .post("http://localhost:8080/vcard")
+                .then()
+                .extract().body().asString();
+        // Then
         var expectedResponse = """
                 BEGIN:VCARD
                 VERSION:4.0
-                TITLE:Senior Software Engineer
                 BDAY:2012-03-14
+                TITLE:Senior Software Engineer
                 N:Doe;Jon;;;
-                ROLE:Consulting
+                ROLE:Software-Consultant
                 URL:https://www.google.com
                 EMAIL;TYPE=WORK;VALUE=uri:mailto:jon.doe@company.uk
                 REV:%s
                 FN:Jon Doe
                 ORG:Lightning Portal Co.;SW;Consulting
-                BIRTHPLACE:Berlin, Germany
                 TEL;TYPE=HOME:+491234567890
+                BIRTHPLACE:Berlin, Germany
                 TEL;TYPE=WORK:+49030123456
+                GENDER:M
                 EMAIL;TYPE=HOME;VALUE=uri:mailto:mind.body@world.com
                 END:VCARD
                 """.formatted(updateDate.format(REV_DATE_FORMAT));
-        // When
-        var actualResponse = given()
-                .contentType(APPLICATION_JSON.toString())
-                .body(vcardInfo)
-                .when()
-                .post("/vcard")
-                .then()
-                .extract().body().asString();
-        // Then
         assertEquals(expectedResponse, actualResponse);
     }
 }

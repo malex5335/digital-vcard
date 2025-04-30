@@ -33,8 +33,8 @@ public class Contact implements FieldProvider {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    @AllArgsConstructor
     @Getter
+    @AllArgsConstructor
     public enum ContactCategory {
         HOME("HOME"), WORK("WORK");
         private final String value;
